@@ -1,0 +1,15 @@
+*.exe
+*.hex
+*.LST
+*.M51
+*.OBJ
+/.vscode/
+/build/
+/build/README.md
+/src/Listings
+/src/Objects
+/src/STARTUP.A51
+/src/*.uvopt
+/src/*.XKP
+/src/*.uvproj
+/README.md

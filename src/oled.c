@@ -1,13 +1,24 @@
 #include <reg52.h>
 #include <intrins.h>
-#include "typedef.h" //为unsigned char和unsigned int添加别名的头文件
-#include "delay.h" //延时函数声明文件
-#include "spicommunication.h"
+#include "typedef.h"
+#include "delay.h"
 #include "oled.h"
 #include "oledfont.h"
+#include "spicommunication.h"
+//OLED的显存
+//存放格式如下.
+//[0]0 1 2 3 ... 127	
+//[1]0 1 2 3 ... 127	
+//[2]0 1 2 3 ... 127	
+//[3]0 1 2 3 ... 127	
+//[4]0 1 2 3 ... 127	
+//[5]0 1 2 3 ... 127	
+//[6]0 1 2 3 ... 127	
+//[7]0 1 2 3 ... 127
 
 #define OLED_MODE_CMD  0	//写命令
-#define OLED_MODE_WORD 1	//写数据
+#define OLED_MODE_DATA 1	//写数据
+
 //OLED模式设置
 //0:4线串行模式
 //1:并行8080模式
@@ -18,29 +29,14 @@
 #define Max_Row		64
 #define	Brightness	0xFF 
 #define X_WIDTH 	128
-#define Y_WIDTH 	64
-//-----------------OLED端口定义---------------- 
+#define Y_WIDTH 	64	
 
-sbit OLED_SCLK=P2^4;//时钟 D0（SCLK?
-sbit OLED_SDO=P2^5;//D1（MOSI） 数据
-sbit OLED_RST =P2^6;//复位
-sbit OLED_DC =P2^7;//数据/命令控制
+sbit OLED_SCLK = P2^4;//D0（SCLK）时钟 
+sbit OLED_SDO = P2^5;//D1（MOSI）数据
+sbit OLED_RST = P2^6;//复位
+sbit OLED_DC = P2^7;//数据/命令控制
 sbit OLED_CS=P2^2; //片选
-//#include "delay.h"
-//OLED的显存
-//存放格式如下.
-//[0]0 1 2 3 ... 127	
-//[1]0 1 2 3 ... 127	
-//[2]0 1 2 3 ... 127	
-//[3]0 1 2 3 ... 127	
-//[4]0 1 2 3 ... 127	
-//[5]0 1 2 3 ... 127	
-//[6]0 1 2 3 ... 127	
-//[7]0 1 2 3 ... 127 			   
 
-//向SSD1306写入一个字节。
-//word:要写入的数据/命令
-//mode:数据/命令标志 0,表示命令;1,表示数据;
 void OLED_Write(uchar word,uchar mode)
 {
 	if(mode)
@@ -50,25 +46,67 @@ void OLED_Write(uchar word,uchar mode)
 	SPI_Communication_Write(word); 
 	OLED_DC = 1;   	  
 }
-	void OLED_Set_Pos(unsigned char x, unsigned char y) 
+
+//初始化SSD1306					    
+void Init_OLED(void)
+{
+  OLED_RST = 1;
+	delay_ms(100);
+	OLED_RST = 0;
+	delay_ms(100);
+	OLED_RST = 1; 
+
+	OLED_Write(0xAE,OLED_MODE_CMD);//--turn off oled panel
+	OLED_Write(0x00,OLED_MODE_CMD);//---set low column address
+	OLED_Write(0x10,OLED_MODE_CMD);//---set high column address
+	OLED_Write(0x40,OLED_MODE_CMD);//--set start line address  Set Mapping RAM Display Start Line (0x00~0x3F)
+	OLED_Write(0x81,OLED_MODE_CMD);//--set contrast control register
+	OLED_Write(0xCF,OLED_MODE_CMD); // Set SEG Output Current Brightness
+	OLED_Write(0xA1,OLED_MODE_CMD);//--Set SEG/Column Mapping     0xa0左右反置 0xa1正常
+	OLED_Write(0xC8,OLED_MODE_CMD);//Set COM/Row Scan Direction   0xc0上下反置 0xc8正常
+	OLED_Write(0xA6,OLED_MODE_CMD);//--set normal display
+	OLED_Write(0xA8,OLED_MODE_CMD);//--set multiplex ratio(1 to 64)
+	OLED_Write(0x3f,OLED_MODE_CMD);//--1/64 duty
+	OLED_Write(0xD3,OLED_MODE_CMD);//-set display offset	Shift Mapping RAM Counter (0x00~0x3F)
+	OLED_Write(0x00,OLED_MODE_CMD);//-not offset
+	OLED_Write(0xd5,OLED_MODE_CMD);//--set display clock divide ratio/oscillator frequency
+	OLED_Write(0x80,OLED_MODE_CMD);//--set divide ratio, Set Clock as 100 Frames/Sec
+	OLED_Write(0xD9,OLED_MODE_CMD);//--set pre-charge period
+	OLED_Write(0xF1,OLED_MODE_CMD);//Set Pre-Charge as 15 Clocks & Discharge as 1 Clock
+	OLED_Write(0xDA,OLED_MODE_CMD);//--set com pins hardware configuration
+	OLED_Write(0x12,OLED_MODE_CMD);
+	OLED_Write(0xDB,OLED_MODE_CMD);//--set vcomh
+	OLED_Write(0x40,OLED_MODE_CMD);//Set VCOM Deselect Level
+	OLED_Write(0x20,OLED_MODE_CMD);//-Set Page Addressing Mode (0x00/0x01/0x02)
+	OLED_Write(0x02,OLED_MODE_CMD);//
+	OLED_Write(0x8D,OLED_MODE_CMD);//--set Charge Pump enable/disable
+	OLED_Write(0x14,OLED_MODE_CMD);//--set(0x10) disable
+	OLED_Write(0xA4,OLED_MODE_CMD);// Disable Entire Display On (0xa4/0xa5)
+	OLED_Write(0xA6,OLED_MODE_CMD);// Disable Inverse Display On (0xa6/a7) 
+	OLED_Write(0xAF,OLED_MODE_CMD);//--turn on oled panel
+	OLED_Write(0xAF,OLED_MODE_CMD); /*display ON*/ 
+	OLED_Clear();
+	OLED_Set_Pos(0,0); 	
+}
+void OLED_Set_Pos(unsigned char x, unsigned char y) 
 { 
-	OLED_Write(0xb0+y, OLED_MODE_CMD);
-	OLED_Write(((x&0xf0)>>4)|0x10, OLED_MODE_CMD);
-	OLED_Write((x&0x0f)|0x01, OLED_MODE_CMD); 
+	OLED_Write(0xb0+y,OLED_MODE_CMD);
+	OLED_Write(((x&0xf0)>>4)|0x10,OLED_MODE_CMD);
+	OLED_Write((x&0x0f)|0x01,OLED_MODE_CMD); 
 }   	  
 //开启OLED显示    
 void OLED_Display_On(void)
 {
-	OLED_Write(0X8D, OLED_MODE_CMD);  //SET DCDC命令
-	OLED_Write(0X14, OLED_MODE_CMD);  //DCDC ON
-	OLED_Write(0XAF, OLED_MODE_CMD);  //DISPLAY ON
+	OLED_Write(0X8D,OLED_MODE_CMD);  //SET DCDC命令
+	OLED_Write(0X14,OLED_MODE_CMD);  //DCDC ON
+	OLED_Write(0XAF,OLED_MODE_CMD);  //DISPLAY ON
 }
 //关闭OLED显示     
 void OLED_Display_Off(void)
 {
-	OLED_Write(0X8D, OLED_MODE_CMD);  //SET DCDC命令
-	OLED_Write(0X10, OLED_MODE_CMD);  //DCDC OFF
-	OLED_Write(0XAE, OLED_MODE_CMD);  //DISPLAY OFF
+	OLED_Write(0X8D,OLED_MODE_CMD);  //SET DCDC命令
+	OLED_Write(0X10,OLED_MODE_CMD);  //DCDC OFF
+	OLED_Write(0XAE,OLED_MODE_CMD);  //DISPLAY OFF
 }		   			 
 //清屏函数,清完屏,整个屏幕是黑色的!和没点亮一样!!!	  
 void OLED_Clear(void)  
@@ -76,10 +114,10 @@ void OLED_Clear(void)
 	uchar i,n;		    
 	for(i=0;i<8;i++)  
 	{  
-		OLED_Write (0xb0+i, OLED_MODE_CMD);    //设置页地址（0~7）
-		OLED_Write (0x00, OLED_MODE_CMD);      //设置显示位置—列低地址
-		OLED_Write (0x10, OLED_MODE_CMD);      //设置显示位置—列高地址   
-		for(n=0;n<128;n++)OLED_Write(0, OLED_MODE_WORD); 
+		OLED_Write (0xb0+i,OLED_MODE_CMD);    //设置页地址（0~7）
+		OLED_Write (0x00,OLED_MODE_CMD);      //设置显示位置—列低地址
+		OLED_Write (0x10,OLED_MODE_CMD);      //设置显示位置—列高地址   
+		for(n=0;n<128;n++)OLED_Write(0,OLED_MODE_DATA); 
 	} //更新显示
 }
 
@@ -98,15 +136,15 @@ void OLED_ShowChar(uchar x,uchar y,uchar chr)
 			{
 			OLED_Set_Pos(x,y);	
 			for(i=0;i<8;i++)
-			OLED_Write(F8X16[c*16+i], OLED_MODE_WORD);
+			OLED_Write(F8X16[c*16+i],OLED_MODE_DATA);
 			OLED_Set_Pos(x,y+1);
 			for(i=0;i<8;i++)
-			OLED_Write(F8X16[c*16+i+8], OLED_MODE_WORD);
+			OLED_Write(F8X16[c*16+i+8],OLED_MODE_DATA);
 			}
 			else {	
 				OLED_Set_Pos(x,y+1);
 				for(i=0;i<6;i++)
-				OLED_Write(F6x8[c][i], OLED_MODE_WORD);
+				OLED_Write(F6x8[c][i],OLED_MODE_DATA);
 				
 			}
 }
@@ -160,13 +198,13 @@ void OLED_ShowCHinese(uchar x,uchar y,uchar no)
 	OLED_Set_Pos(x,y);	
     for(t=0;t<16;t++)
 		{
-				OLED_Write(Hzk[2*no][t], OLED_MODE_WORD);
+				OLED_Write(Hzk[2*no][t],OLED_MODE_DATA);
 				adder+=1;
      }	
 		OLED_Set_Pos(x,y+1);	
     for(t=0;t<16;t++)
 			{	
-				OLED_Write(Hzk[2*no+1][t], OLED_MODE_WORD);
+				OLED_Write(Hzk[2*no+1][t],OLED_MODE_DATA);
 				adder+=1;
       }					
 }
@@ -183,82 +221,7 @@ void OLED_DrawBMP(unsigned char x0, unsigned char y0,unsigned char x1, unsigned 
 		OLED_Set_Pos(x0,y);
     for(x=x0;x<x1;x++)
 	    {      
-	    	OLED_Write(BMP[j++], OLED_MODE_WORD);	    	
+	    	OLED_Write(BMP[j++],OLED_MODE_DATA);	    	
 	    }
 	}
-} 
-
-
-//初始化SSD1306					    
-void Init_OLED(void)
-{
-  OLED_RST = 1;
-	delay_ms(100);
-	OLED_RST = 0;
-	delay_ms(100);
-	OLED_RST = 1; 
-	/*				  
-	OLED_Write(0xAE, OLED_MODE_CMD);//--turn off oled panel
-	OLED_Write(0x00, OLED_MODE_CMD);//---set low column address
-	OLED_Write(0x10, OLED_MODE_CMD);//---set high column address
-	OLED_Write(0x40, OLED_MODE_CMD);//--set start line address  Set Mapping RAM Display Start Line (0x00~0x3F)
-	OLED_Write(0x81, OLED_MODE_CMD);//--set contrast control register
-	OLED_Write(0xCF, OLED_MODE_CMD); // Set SEG Output Current Brightness
-	OLED_Write(0xA1, OLED_MODE_CMD);//--Set SEG/Column Mapping     0xa0左右反置 0xa1正常
-	OLED_Write(0xC8, OLED_MODE_CMD);//Set COM/Row Scan Direction   0xc0上下反置 0xc8正常
-	OLED_Write(0xA6, OLED_MODE_CMD);//--set normal display
-	OLED_Write(0xA8, OLED_MODE_CMD);//--set multiplex ratio(1 to 64)
-	OLED_Write(0x3f, OLED_MODE_CMD);//--1/64 duty
-	OLED_Write(0xD3, OLED_MODE_CMD);//-set display offset	Shift Mapping RAM Counter (0x00~0x3F)
-	OLED_Write(0x00, OLED_MODE_CMD);//-not offset
-	OLED_Write(0xd5, OLED_MODE_CMD);//--set display clock divide ratio/oscillator frequency
-	OLED_Write(0x80, OLED_MODE_CMD);//--set divide ratio, Set Clock as 100 Frames/Sec
-	OLED_Write(0xD9, OLED_MODE_CMD);//--set pre-charge period
-	OLED_Write(0xF1, OLED_MODE_CMD);//Set Pre-Charge as 15 Clocks & Discharge as 1 Clock
-	OLED_Write(0xDA, OLED_MODE_CMD);//--set com pins hardware configuration
-	OLED_Write(0x12, OLED_MODE_CMD);
-	OLED_Write(0xDB, OLED_MODE_CMD);//--set vcomh
-	OLED_Write(0x40, OLED_MODE_CMD);//Set VCOM Deselect Level
-	OLED_Write(0x20, OLED_MODE_CMD);//-Set Page Addressing Mode (0x00/0x01/0x02)
-	OLED_Write(0x02, OLED_MODE_CMD);//
-	OLED_Write(0x8D, OLED_MODE_CMD);//--set Charge Pump enable/disable
-	OLED_Write(0x14, OLED_MODE_CMD);//--set(0x10) disable
-	OLED_Write(0xA4, OLED_MODE_CMD);// Disable Entire Display On (0xa4/0xa5)
-	OLED_Write(0xA6, OLED_MODE_CMD);// Disable Inverse Display On (0xa6/a7) 
-	OLED_Write(0xAF, OLED_MODE_CMD);//--turn on oled panel
-	*/
-
-	OLED_Write(0xAE, OLED_MODE_CMD);//--turn off oled panel
-	OLED_Write(0x00, OLED_MODE_CMD);//---set low column address
-	OLED_Write(0x10, OLED_MODE_CMD);//---set high column address
-	OLED_Write(0x40, OLED_MODE_CMD);//--set start line address  Set Mapping RAM Display Start Line (0x00~0x3F)
-	OLED_Write(0x81, OLED_MODE_CMD);//--set contrast control register
-	OLED_Write(0xCF, OLED_MODE_CMD); // Set SEG Output Current Brightness
-	OLED_Write(0xA1, OLED_MODE_CMD);//--Set SEG/Column Mapping     0xa0左右反置 0xa1正常
-	OLED_Write(0xC8, OLED_MODE_CMD);//Set COM/Row Scan Direction   0xc0上下反置 0xc8正常
-	OLED_Write(0xA6, OLED_MODE_CMD);//--set normal display
-	OLED_Write(0xA8, OLED_MODE_CMD);//--set multiplex ratio(1 to 64)
-	OLED_Write(0x3f, OLED_MODE_CMD);//--1/64 duty
-	OLED_Write(0xD3, OLED_MODE_CMD);//-set display offset	Shift Mapping RAM Counter (0x00~0x3F)
-	OLED_Write(0x00, OLED_MODE_CMD);//-not offset
-	OLED_Write(0xd5, OLED_MODE_CMD);//--set display clock divide ratio/oscillator frequency
-	OLED_Write(0x80, OLED_MODE_CMD);//--set divide ratio, Set Clock as 100 Frames/Sec
-	OLED_Write(0xD9, OLED_MODE_CMD);//--set pre-charge period
-	OLED_Write(0xF1, OLED_MODE_CMD);//Set Pre-Charge as 15 Clocks & Discharge as 1 Clock
-	OLED_Write(0xDA, OLED_MODE_CMD);//--set com pins hardware configuration
-	OLED_Write(0x12, OLED_MODE_CMD);
-	OLED_Write(0xDB, OLED_MODE_CMD);//--set vcomh
-	OLED_Write(0x40, OLED_MODE_CMD);//Set VCOM Deselect Level
-	OLED_Write(0x20, OLED_MODE_CMD);//-Set Page Addressing Mode (0x00/0x01/0x02)
-	OLED_Write(0x02, OLED_MODE_CMD);//
-	OLED_Write(0x8D, OLED_MODE_CMD);//--set Charge Pump enable/disable
-	OLED_Write(0x14, OLED_MODE_CMD);//--set(0x10) disable
-	OLED_Write(0xA4, OLED_MODE_CMD);// Disable Entire Display On (0xa4/0xa5)
-	OLED_Write(0xA6, OLED_MODE_CMD);// Disable Inverse Display On (0xa6/a7) 
-	OLED_Write(0xAF, OLED_MODE_CMD);//--turn on oled panel
-	
-	OLED_Write(0xAF, OLED_MODE_CMD); /*display ON*/ 
-	OLED_Clear();
-	OLED_Set_Pos(0,0); 	
-}  
-
+}

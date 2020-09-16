@@ -3,9 +3,10 @@
 #include "typedef.h" //为unsigned char和unsigned int添加别名的头文件
 #include "delay.h" //延时函数声明文件
 #include "interrupt.h"
-#include "serialcommunication.h"
 #include "motor.h"
+#include "serialcommunication.h"
 #include "spicommunication.h"
+#include "oled.h"
 #include "main.h"
 
 sbit infrared_avoidance_left = P3 ^ 4;
@@ -22,15 +23,23 @@ void Mode_Infrared_Avoidance(char*, uchar*, uchar, char*);
 void Mode_Infrared_Searchline(char*, uchar*, uchar, char*);
 void Mode_DJ(char);
 void main()
-{
+{uchar t;
     char flag_bluetooth = 0, flag_time = 0, flag_time_s = 0, priority[5] = { HIGH_PRIORITY, MEDIUM_PRIORITY, NONE_PRIORITY };
 		uchar word_serial_transmit, word_serial_receive, word_bluetooth;
 
+		Init_OLED();			//初始化OLED  
     Init_Serial_Communication();
     Init_Interrupt();
-    //Car_Forward();
+		
+		OLED_ShowCHinese(0,0,0);//中
+		OLED_ShowCHinese(18,0,1);//景
+		OLED_ShowCHinese(36,0,2);//园
+		OLED_ShowCHinese(54,0,3);//电
+		OLED_ShowCHinese(72,0,4);//子
+		OLED_ShowCHinese(90,0,5);//科
+		OLED_ShowCHinese(108,0,6);//技
     while (1) {
-        if (flag_inter0 >= 5) {
+       if (flag_inter0 >= 5) {
             flag_inter0 = 0;
             flag_time++;
             if (flag_time == 80)
@@ -45,7 +54,7 @@ void main()
         }
         Serial_Communication(&word_serial_transmit, &word_serial_receive);
         Mode_Ctrl(&flag_mode, &word_mode, &flag_bluetooth, &word_bluetooth, flag_time_s, word_serial_receive, priority);
-    }
+	}
 }
 
 void Mode_Ctrl(char* flag, uchar* word, char* flag_bluetooth, uchar* word_bluetooth, char flag_time_s, uchar word_serial_receive, char* priority)

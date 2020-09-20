@@ -27,3 +27,5 @@
 #endif
 
 extern char flag_mode;
+
+void Time_Calculation(void);

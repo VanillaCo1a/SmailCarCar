@@ -1,227 +1,187 @@
-#include <reg52.h>
-#include <intrins.h>
-#include "typedef.h"
-#include "delay.h"
+//////////////////////////////////////////////////////////////////////////////////	 
+//±¾³ÌĞòÖ»¹©Ñ§Ï°Ê¹ÓÃ£¬Î´¾­×÷ÕßĞí¿É£¬²»µÃÓÃÓÚÆäËüÈÎºÎÓÃÍ¾
+//ÖĞ¾°Ô°µç×Ó
+//µêÆÌµØÖ·£ºhttp://shop73023976.taobao.com/?spm=2013.1.0.0.M4PqC2
+//
+//  ÎÄ ¼ş Ãû   : main.c
+//  °æ ±¾ ºÅ   : v2.0
+//  ×÷    Õß   : HuangKai
+//  Éú³ÉÈÕÆÚ   : 2014-0101
+//  ×î½üĞŞ¸Ä   : 
+//  ¹¦ÄÜÃèÊö   : OLED IIC½Ó¿ÚÑİÊ¾Àı³Ì(51ÏµÁĞ)
+//              ËµÃ÷: 
+//              ----------------------------------------------------------------
+//              GND    µçÔ´µØ
+//              VCC  ½Ó5V»ò3.3vµçÔ´
+//              D0   P1^0£¨SCL£©
+//              D1   P1^1£¨SDA£©
+//              RES  ½Ó¸ß
+//              DC   ½ÓµØ
+//              CS   ½ÓµØ                
+//              ----------------------------------------------------------------
+// ĞŞ¸ÄÀúÊ·   :
+// ÈÕ    ÆÚ   : 
+// ×÷    Õß   : HuangKai
+// ĞŞ¸ÄÄÚÈİ   : ´´½¨ÎÄ¼ş
+//°æÈ¨ËùÓĞ£¬µÁ°æ±Ø¾¿¡£
+//Copyright(C) ÖĞ¾°Ô°µç×Ó2014/3/16
+//All rights reserved
+//******************************************************************************/
 #include "oled.h"
-#include "oledfont.h"
-#include "spicommunication.h"
-//OLEDçš„æ˜¾å­˜
-//å­˜æ”¾æ ¼å¼å¦‚ä¸‹.
-//[0]0 1 2 3 ... 127	
-//[1]0 1 2 3 ... 127	
-//[2]0 1 2 3 ... 127	
-//[3]0 1 2 3 ... 127	
-//[4]0 1 2 3 ... 127	
-//[5]0 1 2 3 ... 127	
-//[6]0 1 2 3 ... 127	
-//[7]0 1 2 3 ... 127
+#include "picture.h"
 
-#define OLED_MODE_CMD  0	//å†™å‘½ä»¤
-#define OLED_MODE_DATA 1	//å†™æ•°æ®
 
-//OLEDæ¨¡å¼è®¾ç½®
-//0:4çº¿ä¸²è¡Œæ¨¡å¼
-//1:å¹¶è¡Œ8080æ¨¡å¼
-#define SIZE 16
-#define XLevelL		0x02
-#define XLevelH		0x10
-#define Max_Column	128
-#define Max_Row		64
-#define	Brightness	0xFF 
-#define X_WIDTH 	128
-#define Y_WIDTH 	64	
-
-sbit OLED_SCLK = P2^4;//D0ï¼ˆSCLKï¼‰æ—¶é’Ÿ 
-sbit OLED_SDO = P2^5;//D1ï¼ˆMOSIï¼‰æ•°æ®
-sbit OLED_RST = P2^6;//å¤ä½
-sbit OLED_DC = P2^7;//æ•°æ®/å‘½ä»¤æ§åˆ¶
-sbit OLED_CS=P2^2; //ç‰‡é€‰
-
-void OLED_Write(uchar word,uchar mode)
+/**********************************************
+//IIC Start
+**********************************************/
+void IIC_Start()
 {
-	if(mode)
-	  OLED_DC = 1;
-	else 
-	  OLED_DC = 0;		  
-	SPI_Communication_Write(word); 
-	OLED_DC = 1;   	  
+   SCL = high;		
+   SDA = high;
+   SDA = low;
+   SCL = low;
 }
 
-//åˆå§‹åŒ–SSD1306					    
-void Init_OLED(void)
+/**********************************************
+//IIC Stop
+**********************************************/
+void IIC_Stop()
 {
-  OLED_RST = 1;
-	delay_ms(100);
-	OLED_RST = 0;
-	delay_ms(100);
-	OLED_RST = 1; 
-
-	OLED_Write(0xAE,OLED_MODE_CMD);//--turn off oled panel
-	OLED_Write(0x00,OLED_MODE_CMD);//---set low column address
-	OLED_Write(0x10,OLED_MODE_CMD);//---set high column address
-	OLED_Write(0x40,OLED_MODE_CMD);//--set start line address  Set Mapping RAM Display Start Line (0x00~0x3F)
-	OLED_Write(0x81,OLED_MODE_CMD);//--set contrast control register
-	OLED_Write(0xCF,OLED_MODE_CMD); // Set SEG Output Current Brightness
-	OLED_Write(0xA1,OLED_MODE_CMD);//--Set SEG/Column Mapping     0xa0å·¦å³åç½® 0xa1æ­£å¸¸
-	OLED_Write(0xC8,OLED_MODE_CMD);//Set COM/Row Scan Direction   0xc0ä¸Šä¸‹åç½® 0xc8æ­£å¸¸
-	OLED_Write(0xA6,OLED_MODE_CMD);//--set normal display
-	OLED_Write(0xA8,OLED_MODE_CMD);//--set multiplex ratio(1 to 64)
-	OLED_Write(0x3f,OLED_MODE_CMD);//--1/64 duty
-	OLED_Write(0xD3,OLED_MODE_CMD);//-set display offset	Shift Mapping RAM Counter (0x00~0x3F)
-	OLED_Write(0x00,OLED_MODE_CMD);//-not offset
-	OLED_Write(0xd5,OLED_MODE_CMD);//--set display clock divide ratio/oscillator frequency
-	OLED_Write(0x80,OLED_MODE_CMD);//--set divide ratio, Set Clock as 100 Frames/Sec
-	OLED_Write(0xD9,OLED_MODE_CMD);//--set pre-charge period
-	OLED_Write(0xF1,OLED_MODE_CMD);//Set Pre-Charge as 15 Clocks & Discharge as 1 Clock
-	OLED_Write(0xDA,OLED_MODE_CMD);//--set com pins hardware configuration
-	OLED_Write(0x12,OLED_MODE_CMD);
-	OLED_Write(0xDB,OLED_MODE_CMD);//--set vcomh
-	OLED_Write(0x40,OLED_MODE_CMD);//Set VCOM Deselect Level
-	OLED_Write(0x20,OLED_MODE_CMD);//-Set Page Addressing Mode (0x00/0x01/0x02)
-	OLED_Write(0x02,OLED_MODE_CMD);//
-	OLED_Write(0x8D,OLED_MODE_CMD);//--set Charge Pump enable/disable
-	OLED_Write(0x14,OLED_MODE_CMD);//--set(0x10) disable
-	OLED_Write(0xA4,OLED_MODE_CMD);// Disable Entire Display On (0xa4/0xa5)
-	OLED_Write(0xA6,OLED_MODE_CMD);// Disable Inverse Display On (0xa6/a7) 
-	OLED_Write(0xAF,OLED_MODE_CMD);//--turn on oled panel
-	OLED_Write(0xAF,OLED_MODE_CMD); /*display ON*/ 
-	OLED_Clear();
-	OLED_Set_Pos(0,0); 	
+   SCL = low;
+   SDA = low;
+   SCL = high;
+   SDA = high;
 }
-void OLED_Set_Pos(unsigned char x, unsigned char y) 
-{ 
-	OLED_Write(0xb0+y,OLED_MODE_CMD);
-	OLED_Write(((x&0xf0)>>4)|0x10,OLED_MODE_CMD);
-	OLED_Write((x&0x0f)|0x01,OLED_MODE_CMD); 
-}   	  
-//å¼€å¯OLEDæ˜¾ç¤º    
-void OLED_Display_On(void)
+/**********************************************
+// IIC Write byte
+**********************************************/
+void Write_IIC_Byte(unsigned char IIC_Byte)
 {
-	OLED_Write(0X8D,OLED_MODE_CMD);  //SET DCDCå‘½ä»¤
-	OLED_Write(0X14,OLED_MODE_CMD);  //DCDC ON
-	OLED_Write(0XAF,OLED_MODE_CMD);  //DISPLAY ON
-}
-//å…³é—­OLEDæ˜¾ç¤º     
-void OLED_Display_Off(void)
-{
-	OLED_Write(0X8D,OLED_MODE_CMD);  //SET DCDCå‘½ä»¤
-	OLED_Write(0X10,OLED_MODE_CMD);  //DCDC OFF
-	OLED_Write(0XAE,OLED_MODE_CMD);  //DISPLAY OFF
-}		   			 
-//æ¸…å±å‡½æ•°,æ¸…å®Œå±,æ•´ä¸ªå±å¹•æ˜¯é»‘è‰²çš„!å’Œæ²¡ç‚¹äº®ä¸€æ ·!!!	  
-void OLED_Clear(void)  
-{  
-	uchar i,n;		    
-	for(i=0;i<8;i++)  
-	{  
-		OLED_Write (0xb0+i,OLED_MODE_CMD);    //è®¾ç½®é¡µåœ°å€ï¼ˆ0~7ï¼‰
-		OLED_Write (0x00,OLED_MODE_CMD);      //è®¾ç½®æ˜¾ç¤ºä½ç½®â€”åˆ—ä½åœ°å€
-		OLED_Write (0x10,OLED_MODE_CMD);      //è®¾ç½®æ˜¾ç¤ºä½ç½®â€”åˆ—é«˜åœ°å€   
-		for(n=0;n<128;n++)OLED_Write(0,OLED_MODE_DATA); 
-	} //æ›´æ–°æ˜¾ç¤º
-}
-
-
-//åœ¨æŒ‡å®šä½ç½®æ˜¾ç¤ºä¸€ä¸ªå­—ç¬¦,åŒ…æ‹¬éƒ¨åˆ†å­—ç¬¦
-//x:0~127
-//y:0~63
-//mode:0,åç™½æ˜¾ç¤º;1,æ­£å¸¸æ˜¾ç¤º				 
-//size:é€‰æ‹©å­—ä½“ 16/12 
-void OLED_ShowChar(uchar x,uchar y,uchar chr)
-{      	
-	unsigned char c=0,i=0;	
-		c=chr-' ';//å¾—åˆ°åç§»åçš„å€¼			
-		if(x>Max_Column-1){x=0;y=y+2;}
-		if(SIZE ==16)
-			{
-			OLED_Set_Pos(x,y);	
-			for(i=0;i<8;i++)
-			OLED_Write(F8X16[c*16+i],OLED_MODE_DATA);
-			OLED_Set_Pos(x,y+1);
-			for(i=0;i<8;i++)
-			OLED_Write(F8X16[c*16+i+8],OLED_MODE_DATA);
-			}
-			else {	
-				OLED_Set_Pos(x,y+1);
-				for(i=0;i<6;i++)
-				OLED_Write(F6x8[c][i],OLED_MODE_DATA);
-				
-			}
-}
-//m^nå‡½æ•°
-uint oled_pow(uchar m,uchar n)
-{
-	uint result=1;	 
-	while(n--)result*=m;    
-	return result;
-}				  
-//æ˜¾ç¤º2ä¸ªæ•°å­—
-//x,y :èµ·ç‚¹åæ ‡	 
-//len :æ•°å­—çš„ä½æ•°
-//size:å­—ä½“å¤§å°
-//mode:æ¨¡å¼	0,å¡«å……æ¨¡å¼;1,å åŠ æ¨¡å¼
-//num:æ•°å€¼(0~4294967295);	 		  
-void OLED_ShowNum(uchar x,uchar y,uint num,uchar len,uchar size2)
-{         	
-	uchar t,temp;
-	uchar enshow=0;						   
-	for(t=0;t<len;t++)
+	unsigned char i;
+	for(i=0;i<8;i++)		
 	{
-		temp=(num/oled_pow(10,len-t-1))%10;
-		if(enshow==0&&t<(len-1))
-		{
-			if(temp==0)
-			{
-				OLED_ShowChar(x+(size2/2)*t,y,' ');
-				continue;
-			}else enshow=1; 
-		 	 
-		}
-	 	OLED_ShowChar(x+(size2/2)*t,y,temp+'0'); 
+		if(IIC_Byte & 0x80)
+		SDA=high;
+		else
+		SDA=low;
+		SCL=high;
+		SCL=low;
+		IIC_Byte<<=1;
 	}
-} 
-//æ˜¾ç¤ºä¸€ä¸ªå­—ç¬¦å·ä¸²
-void OLED_ShowString(uchar x,uchar y,uchar *chr)
+	SDA=1;
+	SCL=1;
+	SCL=0;
+}
+/**********************************************
+// IIC Write Command
+**********************************************/
+void Write_IIC_Command(unsigned char IIC_Command)
 {
-	unsigned char j=0;
-	while (chr[j]!='\0')
-	{		OLED_ShowChar(x,y,chr[j]);
-			x+=8;
-		if(x>120){x=0;y+=2;}
-			j++;
-	}
+   IIC_Start();
+   Write_IIC_Byte(0x78);            //Slave address,SA0=0
+   Write_IIC_Byte(0x00);			//write command
+   Write_IIC_Byte(IIC_Command); 
+   IIC_Stop();
 }
-//æ˜¾ç¤ºæ±‰å­—
-void OLED_ShowCHinese(uchar x,uchar y,uchar no)
-{      			    
-	uchar t,adder=0;
-	OLED_Set_Pos(x,y);	
-    for(t=0;t<16;t++)
-		{
-				OLED_Write(Hzk[2*no][t],OLED_MODE_DATA);
-				adder+=1;
-     }	
-		OLED_Set_Pos(x,y+1);	
-    for(t=0;t<16;t++)
-			{	
-				OLED_Write(Hzk[2*no+1][t],OLED_MODE_DATA);
-				adder+=1;
-      }					
+/**********************************************
+// IIC Write Data
+**********************************************/
+void Write_IIC_Data(unsigned char IIC_Data)
+{
+   IIC_Start();
+   Write_IIC_Byte(0x78);			//D/C#=0; R/W#=0
+   Write_IIC_Byte(0x40);			//write data
+   Write_IIC_Byte(IIC_Data);
+   IIC_Stop();
 }
-/***********åŠŸèƒ½æè¿°ï¼šæ˜¾ç¤ºæ˜¾ç¤ºBMPå›¾ç‰‡128Ã—64èµ·å§‹ç‚¹åæ ‡(x,y),xçš„èŒƒå›´0ï½127ï¼Œyä¸ºé¡µçš„èŒƒå›´0ï½7*****************/
-void OLED_DrawBMP(unsigned char x0, unsigned char y0,unsigned char x1, unsigned char y1,unsigned char BMP[])
-{ 	
- unsigned int j=0;
- unsigned char x,y;
-  
-  if(y1%8==0) y=y1/8;      
-  else y=y1/8+1;
-	for(y=y0;y<y1;y++)
+/********************************************
+// fill_Picture
+********************************************/
+void fill_picture(unsigned char fill_Data)
+{
+	unsigned char m,n;
+	for(m=0;m<8;m++)
 	{
-		OLED_Set_Pos(x0,y);
-    for(x=x0;x<x1;x++)
-	    {      
-	    	OLED_Write(BMP[j++],OLED_MODE_DATA);	    	
-	    }
+		Write_IIC_Command(0xb0+m);		//page0-page1
+		Write_IIC_Command(0x00);		//low column start address
+		Write_IIC_Command(0x10);		//high column start address
+		for(n=0;n<132;n++)
+			{
+				Write_IIC_Data(fill_Data);
+			}
 	}
 }
+/******************************************
+// pictureÓÃÀ´ÏÔÊ¾Ò»¸öÍ¼Æ¬
+******************************************/
+void Picture()
+{
+  unsigned char x,y;
+  unsigned int i=0;
+  for(y=0;y<8;y++)
+    {
+      Write_IIC_Command(0xb0+y);
+      Write_IIC_Command(0x0);
+      Write_IIC_Command(0x10);
+      for(x=0;x<132;x++)
+        {
+          Write_IIC_Data(show[i++]);
+        }
+    }
+}
+
+/***********************Delay****************************************/
+void Delay_50ms(unsigned int Del_50ms)
+{
+	unsigned int m;
+	for(;Del_50ms>0;Del_50ms--)
+		for(m=6245;m>0;m--);
+}
+
+void Delay_1ms(unsigned int Del_1ms)
+{
+	unsigned char j;
+	while(Del_1ms--)
+	{	
+		for(j=0;j<123;j++);
+	}
+}
+
+
+
+void Initial_M096128x64_ssd1306()
+{
+	Write_IIC_Command(0xAE);   //display off
+	Write_IIC_Command(0x20);	//Set Memory Addressing Mode	
+	Write_IIC_Command(0x10);	//00,Horizontal Addressing Mode;01,Vertical Addressing Mode;10,Page Addressing Mode (RESET);11,Invalid
+	Write_IIC_Command(0xb0);	//Set Page Start Address for Page Addressing Mode,0-7
+	Write_IIC_Command(0xc8);	//Set COM Output Scan Direction
+	Write_IIC_Command(0x00);//---set low column address
+	Write_IIC_Command(0x10);//---set high column address
+	Write_IIC_Command(0x40);//--set start line address
+	Write_IIC_Command(0x81);//--set contrast control register
+	Write_IIC_Command(0xdf);
+	Write_IIC_Command(0xa1);//--set segment re-map 0 to 127
+	Write_IIC_Command(0xa6);//--set normal display
+	Write_IIC_Command(0xa8);//--set multiplex ratio(1 to 64)
+	Write_IIC_Command(0x3F);//
+	Write_IIC_Command(0xa4);//0xa4,Output follows RAM content;0xa5,Output ignores RAM content
+	Write_IIC_Command(0xd3);//-set display offset
+	Write_IIC_Command(0x00);//-not offset
+	Write_IIC_Command(0xd5);//--set display clock divide ratio/oscillator frequency
+	Write_IIC_Command(0xf0);//--set divide ratio
+	Write_IIC_Command(0xd9);//--set pre-charge period
+	Write_IIC_Command(0x22); //
+	Write_IIC_Command(0xda);//--set com pins hardware configuration
+	Write_IIC_Command(0x12);
+	Write_IIC_Command(0xdb);//--set vcomh
+	Write_IIC_Command(0x20);//0x20,0.77xVcc
+	Write_IIC_Command(0x8d);//--set DC-DC enable
+	Write_IIC_Command(0x14);//
+	Write_IIC_Command(0xaf);//--turn on oled panel 
+}
+
+
+
+
+

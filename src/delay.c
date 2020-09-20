@@ -1,8 +1,9 @@
-#include <reg52.h>
-#include <intrins.h>
-#include "typedef.h" //为unsigned char和unsigned int添加别名的头文件
-#include "delay.h"
+#include "head.h"
 
+void delay_5us(void)	//延时5个机器周期的函数, 5~5.5us
+{
+	_nop_();
+}
 void delay_100us(uchar nhus)
 {
 	uchar x, y;

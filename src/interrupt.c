@@ -1,22 +1,18 @@
-#include <reg52.h>
-#include <intrins.h>
-#include "typedef.h" //为unsigned char和unsigned int添加别名的头文件
-#include "delay.h"   //延时函数声明文件
-#include "interrupt.h"
+#include "head.h"
 
 /** 在静态整型变量time_ruptx中计算计时器x中需要装填入两个八位寄存器中的初值
     在静态整型变量time_THx_Init, time_TLx_Init中计算计时器x中第一次装填入两个八位寄存器的初值(经修正)
     在静态整型变量time_THx, time_TLx中计算计时器x中每次重装时装填入两个八位寄存器的初值(经修正)    **/
-uint time_rupt0 = 65536 - TIME_DELAY_RUPT0 / (12 / CRYSTAL_FREQUENCY);
-uint time_TH0_Init = ((uint)(65536 - TIME_DELAY_RUPT0 / (12 / CRYSTAL_FREQUENCY) + TIME_DELAY_STEP_RUPT0_INIT)) / 256;
-uint time_TL0_Init = ((uint)(65536 - TIME_DELAY_RUPT0 / (12 / CRYSTAL_FREQUENCY) + TIME_DELAY_STEP_RUPT0_INIT)) % 256;
-uint time_TH0 = ((uint)(65536 - TIME_DELAY_RUPT0 / (12 / CRYSTAL_FREQUENCY) + TIME_DELAY_STEP_RUPT0)) / 256;
-uint time_TL0 = ((uint)(65536 - TIME_DELAY_RUPT0 / (12 / CRYSTAL_FREQUENCY) + TIME_DELAY_STEP_RUPT0)) % 256;
-uint time_rupt1 = 65536 - TIME_DELAY_RUPT1 / (12 / CRYSTAL_FREQUENCY);
-uint time_TH1_Init = ((uint)(65536 - TIME_DELAY_RUPT1 / (12 / CRYSTAL_FREQUENCY) + TIME_DELAY_STEP_RUPT1_INIT)) / 256;
-uint time_TL1_Init = ((uint)(65536 - TIME_DELAY_RUPT1 / (12 / CRYSTAL_FREQUENCY) + TIME_DELAY_STEP_RUPT1_INIT)) % 256;
-uint time_TH1 = ((uint)(65536 - TIME_DELAY_RUPT1 / (12 / CRYSTAL_FREQUENCY) + TIME_DELAY_STEP_RUPT1)) / 256;
-uint time_TL1 = ((uint)(65536 - TIME_DELAY_RUPT1 / (12 / CRYSTAL_FREQUENCY) + TIME_DELAY_STEP_RUPT1)) % 256;
+const uint time_rupt0 = 65536 - TIME_DELAY_RUPT0 / (12 / CRYSTAL_FREQUENCY);
+const uint time_TH0_Init = ((uint)(65536 - TIME_DELAY_RUPT0 / (12 / CRYSTAL_FREQUENCY) + TIME_DELAY_STEP_RUPT0_INIT)) / 256;
+const uint time_TL0_Init = ((uint)(65536 - TIME_DELAY_RUPT0 / (12 / CRYSTAL_FREQUENCY) + TIME_DELAY_STEP_RUPT0_INIT)) % 256;
+const uint time_TH0 = ((uint)(65536 - TIME_DELAY_RUPT0 / (12 / CRYSTAL_FREQUENCY) + TIME_DELAY_STEP_RUPT0)) / 256;
+const uint time_TL0 = ((uint)(65536 - TIME_DELAY_RUPT0 / (12 / CRYSTAL_FREQUENCY) + TIME_DELAY_STEP_RUPT0)) % 256;
+const uint time_rupt1 = 65536 - TIME_DELAY_RUPT1 / (12 / CRYSTAL_FREQUENCY);
+const uint time_TH1_Init = ((uint)(65536 - TIME_DELAY_RUPT1 / (12 / CRYSTAL_FREQUENCY) + TIME_DELAY_STEP_RUPT1_INIT)) / 256;
+const uint time_TL1_Init = ((uint)(65536 - TIME_DELAY_RUPT1 / (12 / CRYSTAL_FREQUENCY) + TIME_DELAY_STEP_RUPT1_INIT)) % 256;
+const uint time_TH1 = ((uint)(65536 - TIME_DELAY_RUPT1 / (12 / CRYSTAL_FREQUENCY) + TIME_DELAY_STEP_RUPT1)) / 256;
+const uint time_TL1 = ((uint)(65536 - TIME_DELAY_RUPT1 / (12 / CRYSTAL_FREQUENCY) + TIME_DELAY_STEP_RUPT1)) % 256;
 //软件标志位, 用于记录中断是否触发
 char flag_inter0 = 0, flag_inter1 = 0, flag_exter0 = 0, flag_exter1 = 0, flag_serial_receive = 0, flag_serial_transmit = 0;
 

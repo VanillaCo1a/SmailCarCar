@@ -1,8 +1,4 @@
-#include <reg52.h>
-#include <intrins.h>
-#include "typedef.h" //为unsigned char和unsigned int添加别名的头文件
-#include "interrupt.h"
-#include "motor.h"
+#include "head.h"
 
 sbit Wheel_Left_1st = P1^4;
 sbit Wheel_Left_2nd = P1^5;

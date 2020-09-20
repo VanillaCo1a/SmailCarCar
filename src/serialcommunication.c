@@ -1,10 +1,4 @@
-#include <reg52.h>
-#include <intrins.h>
-#include "typedef.h"
-#include "delay.h"
-#include "interrupt.h"
-#include "serialcommunication.h"
-#include "main.h"
+#include "head.h"
 
 /***	主程序写法示例
 void main(void)
